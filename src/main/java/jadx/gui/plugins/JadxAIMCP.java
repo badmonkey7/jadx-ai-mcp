@@ -238,6 +238,7 @@ public class JadxAIMCP implements JadxPlugin {
             app.get("/rename-class", this::handleRenameClass);
             app.get("/rename-method", this::handleRenameMethod);
             app.get("/rename-field", this::handleRenameField);
+            app.get("/search-code",this::handleSearchCode);
             app.get("/health", this::handleHealth);
 
             logger.info(
@@ -917,6 +918,32 @@ public class JadxAIMCP implements JadxPlugin {
         } catch (Exception e) {
             logger.error("JADX AI MCP Error: " + e.getMessage(), e);
             ctx.status(500).json(Map.of("error", "Internal error during method search: " + e.getMessage()));
+        }
+    }
+
+    //method to handle /search-code
+    private void handleSearchCode(Context ctx) {
+        String code = ctx.queryParam("code");
+        List<String> results = new ArrayList<>();
+
+        if (code == null) {
+            logger.error("JADX AI MCP Error: Missing 'code' parameter.");
+            ctx.status(400).json(Map.of("error", "Missing 'code' parameter."));
+            return;
+        }
+        try {
+            JadxWrapper wrapper = mainWindow.getWrapper();
+            for (JavaClass cls : wrapper.getIncludedClassesWithInners()) {
+                String clsCode = cls.getCode();
+                if(clsCode.toLowerCase().contains(code.toLowerCase())) {
+                    results.add(cls.getFullName());
+                }
+            }
+            ctx.result(String.join("\n", results));
+
+        } catch (Exception e) {
+            logger.error("JADX AI MCP Error: " + e.getMessage(), e);
+            ctx.status(500).json(Map.of("error", "Internal error during code search: " + e.getMessage()));
         }
     }
 
